@@ -9,6 +9,10 @@ return {
     'nvim-tree/nvim-web-devicons', -- not strictly required, but recommended
     'MunifTanjim/nui.nvim',
   },
+  source_selector = {
+    winbar = true,
+    statusline = false,
+  },
   lazy = false,
   keys = {
     { '\\', ':Neotree reveal<CR>', desc = 'NeoTree reveal', silent = true },
@@ -19,6 +23,14 @@ return {
         mappings = {
           ['\\'] = 'close_window',
         },
+      },
+    },
+    default_component_configs = {
+      icon = {
+        folder_closed = '',
+        folder_open = '',
+        folder_empty = '',
+        default = '',
       },
     },
   },

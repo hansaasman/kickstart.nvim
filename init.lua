@@ -1,6 +1,5 @@
 --[[
 
-=====================================================================
 ==================== READ THIS BEFORE CONTINUING ====================
 =====================================================================
 ========                                    .-----.          ========
@@ -185,10 +184,10 @@ vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagn
 vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
 
 -- TIP: Disable arrow keys in normal mode
--- vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
--- vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
--- vim.keymap.set('n', '<up>', '<cmd>echo "Use k to move!!"<CR>')
--- vim.keymap.set('n', '<down>', '<cmd>echo "Use j to move!!"<CR>')
+vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
+vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
+vim.keymap.set('n', '<up>', '<cmd>echo "Use k to move!!"<CR>')
+vim.keymap.set('n', '<down>', '<cmd>echo "Use j to move!!"<CR>')
 
 -- Keybinds to make split navigation easier.
 --  Use CTRL+<hjkl> to switch between windows
@@ -250,21 +249,8 @@ require('lazy').setup({
   'NMAC427/guess-indent.nvim', -- Detect tabstop and shiftwidth automatically
   'github/copilot.vim',
   'christoomey/vim-tmux-navigator',
-  'christoomey/vim-tmux-navigator',
 
-  {
-    'NeogitOrg/neogit',
-    dependencies = {
-      'nvim-lua/plenary.nvim', -- required
-      'sindrets/diffview.nvim', -- optional - Diff integration
-
-      -- Only one of these is needed.
-      'nvim-telescope/telescope.nvim', -- optional
-    },
-    config = function()
-      require('neogit').setup {}
-    end,
-  },
+  -- require 'custom.rust',
 
   -- NOTE: Plugins can also be added by using a table,
   -- with the first argument being the link and the following
@@ -892,29 +878,113 @@ require('lazy').setup({
       signature = { enabled = true },
     },
   },
-
-  { -- You can easily change to a different colorscheme.
-    -- Change the name of the colorscheme plugin below, and then
-    -- change the command in the config to whatever the name of that colorscheme is.
-    --
-    -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-    'folke/tokyonight.nvim',
+  {
+    -- Edge colorscheme
+    'sainnhe/edge',
     priority = 1000, -- Make sure to load this before all the other start plugins.
     config = function()
-      ---@diagnostic disable-next-line: missing-fields
-      require('tokyonight').setup {
-        styles = {
-          comments = { italic = false }, -- Disable italics in comments
-        },
-      }
+      -- Edge configuration options (set before loading the colorscheme)
+      vim.g.edge_style = 'neon' -- Options: 'default', 'aura', 'neon'
+      vim.g.edge_better_performance = 1
+      vim.g.edge_disable_italic_comment = 1 -- Disable italics in comments (like your tokyonight config)
 
-      -- Load the colorscheme here.
-      -- Like many other themes, this one has different styles, and you could load
-      -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
+      -- Load the colorscheme
+      vim.cmd.colorscheme 'edge'
     end,
   },
 
+  {
+    'nvim-lualine/lualine.nvim',
+    dependencies = { 'nvim-tree/nvim-web-devicons' },
+    config = function()
+      require('lualine').setup {
+        options = {
+          theme = 'horizon', -- or 'auto' to match your colorscheme
+          globalstatus = true, -- single statusline for all windows
+          icons_enabled = false, -- set to true if you have a Nerd Font
+          component_separators = { left = '|', right = '|' },
+          section_separators = { left = '', right = '' },
+        },
+        sections = {
+          lualine_a = { 'mode' },
+          lualine_b = {
+            'branch',
+            {
+              'diff',
+              symbols = { added = '+', modified = '~', removed = '-' },
+            },
+            {
+              'diagnostics',
+              symbols = { error = 'E:', warn = 'W:', info = 'I:', hint = 'H:' },
+            },
+          },
+          lualine_c = {
+            {
+              'filename',
+              path = 1, -- 0 = just filename, 1 = relative path, 2 = absolute path
+            },
+          },
+          lualine_d = { -- New section for Python environment
+            {
+              function()
+                -- Check for Poetry first
+                local poetry_env = vim.fn.system('poetry env info --path 2>/dev/null'):gsub('\n', '')
+                if vim.v.shell_error == 0 and poetry_env ~= '' then
+                  local env_name = string.match(poetry_env, '([^/\\]+)$')
+                  return 'poetry: ' .. env_name
+                end
+
+                -- Check for regular virtual environment
+                local venv = os.getenv 'VIRTUAL_ENV'
+                if venv then
+                  local env_name = string.match(venv, '([^/\\]+)$')
+                  return 'venv: ' .. env_name
+                end
+
+                -- Check for conda environment
+                local conda = os.getenv 'CONDA_DEFAULT_ENV'
+                if conda then
+                  return 'conda: ' .. conda
+                end
+
+                return 'system python'
+              end,
+              cond = function()
+                return vim.bo.filetype == 'python'
+              end,
+              color = { fg = '#98c379' }, -- Green color
+            },
+          },
+          lualine_x = { 'encoding', 'fileformat', 'filetype' },
+          lualine_y = { 'progress' },
+          lualine_z = { 'location' },
+        },
+      }
+    end,
+  },
+
+  -- { -- You can easily change to a different colorscheme.
+  --   -- Change the name of the colorscheme plugin below, and then
+  --   -- change the command in the config to whatever the name of that colorscheme is.
+  --   --
+  --   -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
+  --   'folke/tokyonight.nvim',
+  --   priority = 1000, -- Make sure to load this before all the other start plugins.
+  --   config = function()
+  --     ---@diagnostic disable-next-line: missing-fields
+  --     require('tokyonight').setup {
+  --       styles = {
+  --         comments = { italic = false }, -- Disable italics in comments
+  --       },
+  --     }
+  --
+  --     -- Load the colorscheme here.
+  --     -- Like many other themes, this one has different styles, and you could load
+  --     -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
+  --     vim.cmd.colorscheme 'tokyonight-night'
+  --   end,
+  -- },
+  --
   -- Highlight todo, notes, etc in comments
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
 
@@ -957,13 +1027,13 @@ require('lazy').setup({
   },
   {
     'nvim-tree/nvim-tree.lua',
-  dependencies = 'nvim-tree/nvim-web-devicons',
-  config = function()
-    require('nvim-tree').setup({})
-    -- Set up the keybinding
-    vim.keymap.set('n', '<leader>n', ':NvimTreeToggle<CR>', { desc = 'Toggle file tree' })
-  end,
-},
+    dependencies = 'nvim-tree/nvim-web-devicons',
+    config = function()
+      require('nvim-tree').setup {}
+      -- Set up the keybinding
+      vim.keymap.set('n', '<leader>n', ':NvimTreeToggle<CR>', { desc = 'Toggle file tree' })
+    end,
+  },
 
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
@@ -1005,7 +1075,7 @@ require('lazy').setup({
   -- require 'kickstart.plugins.lint',
   -- require 'kickstart.plugins.autopairs',
   -- require 'kickstart.plugins.neo-tree',
-  -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
+  require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    This is the easiest way to modularize your config.
@@ -1040,4 +1110,5 @@ require('lazy').setup({
 })
 
 -- The line beneath this is called `modeline`. See `:help modeline`
+-- vim: ts=2 sts=2 sw=2 et
 -- vim: ts=2 sts=2 sw=2 et
