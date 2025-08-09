@@ -988,6 +988,20 @@ require('lazy').setup({
   -- Highlight todo, notes, etc in comments
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
 
+{
+  'ojroques/vim-oscyank',
+  config = function()
+    vim.g.oscyank_term = 'default'
+    -- Auto-copy when yanking
+    vim.api.nvim_create_autocmd('TextYankPost', {
+      group = vim.api.nvim_create_augroup('OSCYank', { clear = true }),
+      callback = function()
+        vim.fn.OSCYank(vim.v.event.regcontents)
+      end,
+    })
+  end
+},
+
   { -- Collection of various small independent plugins/modules
     'echasnovski/mini.nvim',
     config = function()
