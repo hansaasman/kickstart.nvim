@@ -50,11 +50,23 @@ return {
       'rcarriga/nvim-dap-ui',
     },
     config = function()
-      local path = '~/.local/share/nvim/mason/packages/debugpy/venv/bin/python'
+      local path = vim.fn.expand('~/.local/share/nvim/mason/packages/debugpy/venv/bin/python')
       require('dap-python').setup(path)
       
-      -- FastAPI debug configurations
+      -- Ensure debugpy adapter is registered
       local dap = require('dap')
+      if not dap.adapters.python then
+        dap.adapters.python = {
+          type = 'executable',
+          command = path,
+          args = { '-m', 'debugpy.adapter' },
+        }
+      end
+      
+      -- Alias debugpy to python adapter for compatibility
+      dap.adapters.debugpy = dap.adapters.python
+      
+      -- FastAPI debug configurations
       table.insert(dap.configurations.python, {
         type = 'python',
         request = 'launch',
