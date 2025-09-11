@@ -44,7 +44,7 @@ return {
   -- Python debugging
   {
     'mfussenegger/nvim-dap-python',
-    ft = 'python',
+    -- Remove ft = 'python' to ensure it loads immediately
     dependencies = {
       'mfussenegger/nvim-dap',
       'rcarriga/nvim-dap-ui',
@@ -88,8 +88,14 @@ return {
         console = 'integratedTerminal',
         justMyCode = false,
         pythonPath = function()
-          -- First check for Poetry environment
-          local handle = io.popen('poetry env info --path 2>/dev/null')
+          -- Check the specific project path first
+          local project_venv = '/disk1/hans/sib/contract-sib/hans/api/.venv/bin/python'
+          if vim.fn.executable(project_venv) == 1 then
+            return project_venv
+          end
+          
+          -- Then check for Poetry environment
+          local handle = io.popen('cd /disk1/hans/sib/contract-sib/hans/api && poetry env info --path 2>/dev/null')
           if handle then
             local result = handle:read("*a")
             handle:close()
@@ -100,7 +106,7 @@ return {
               end
             end
           end
-          -- Fallback to venv
+          -- Fallback to venv in current directory
           local cwd = vim.fn.getcwd()
           if vim.fn.executable(cwd .. '/venv/bin/python') == 1 then
             return cwd .. '/venv/bin/python'
@@ -131,8 +137,14 @@ return {
         console = 'integratedTerminal',
         justMyCode = false,
         pythonPath = function()
-          -- First check for Poetry environment
-          local handle = io.popen('poetry env info --path 2>/dev/null')
+          -- Check the specific project path first
+          local project_venv = '/disk1/hans/sib/contract-sib/hans/api/.venv/bin/python'
+          if vim.fn.executable(project_venv) == 1 then
+            return project_venv
+          end
+          
+          -- Then check for Poetry environment
+          local handle = io.popen('cd /disk1/hans/sib/contract-sib/hans/api && poetry env info --path 2>/dev/null')
           if handle then
             local result = handle:read("*a")
             handle:close()
@@ -143,7 +155,7 @@ return {
               end
             end
           end
-          -- Fallback to venv
+          -- Fallback to venv in current directory
           local cwd = vim.fn.getcwd()
           if vim.fn.executable(cwd .. '/venv/bin/python') == 1 then
             return cwd .. '/venv/bin/python'
