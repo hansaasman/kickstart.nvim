@@ -137,6 +137,37 @@ return {
     dap.listeners.before.event_terminated['dapui_config'] = dapui.close
     dap.listeners.before.event_exited['dapui_config'] = dapui.close
 
+    -- Setup Python debugger adapter
+    local debugpy_path = vim.fn.expand('~/.local/share/nvim/mason/packages/debugpy/venv/bin/python')
+    if vim.fn.executable(debugpy_path) == 1 then
+      dap.adapters.debugpy = {
+        type = 'executable',
+        command = debugpy_path,
+        args = { '-m', 'debugpy.adapter' },
+      }
+      dap.adapters.python = dap.adapters.debugpy
+      
+      -- Basic Python configuration
+      dap.configurations.python = {
+        {
+          type = 'python',
+          request = 'launch',
+          name = 'Launch file',
+          program = '${file}',
+          pythonPath = function()
+            local cwd = vim.fn.getcwd()
+            if vim.fn.executable(cwd .. '/.venv/bin/python') == 1 then
+              return cwd .. '/.venv/bin/python'
+            elseif vim.fn.executable(cwd .. '/venv/bin/python') == 1 then
+              return cwd .. '/venv/bin/python'
+            else
+              return '/usr/bin/python'
+            end
+          end,
+        },
+      }
+    end
+
     -- Install golang specific config
     require('dap-go').setup {
       delve = {
