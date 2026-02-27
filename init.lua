@@ -165,6 +165,29 @@ vim.o.scrolloff = 10
 -- See `:help 'confirm'`
 vim.o.confirm = true
 
+-- Custom tabline: show last 3 path components instead of abbreviated paths
+function _G.custom_tabline()
+  local s = ''
+  for i = 1, vim.fn.tabpagenr '$' do
+    local winnr = vim.fn.tabpagewinnr(i)
+    local bufnr = vim.fn.tabpagebuflist(i)[winnr]
+    local name = vim.fn.bufname(bufnr)
+    if name == '' then
+      name = '[No Name]'
+    else
+      local parts = vim.split(name, '/', { plain = true })
+      local n = #parts
+      if n > 3 then
+        name = table.concat({ parts[n - 2], parts[n - 1], parts[n] }, '/')
+      end
+    end
+    local hl = (i == vim.fn.tabpagenr()) and '%#TabLineSel#' or '%#TabLine#'
+    s = s .. hl .. ' ' .. i .. ' ' .. name .. ' '
+  end
+  return s .. '%#TabLineFill#'
+end
+vim.o.tabline = '%!v:lua.custom_tabline()'
+
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
@@ -174,6 +197,14 @@ vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
 -- Diagnostic keymaps
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
+
+vim.keymap.set('n', '<leader>tl', function()
+  if vim.o.background == 'dark' then
+    vim.o.background = 'light'
+  else
+    vim.o.background = 'dark'
+  end
+end, { desc = '[T]oggle [L]ight/dark mode' })
 
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
 -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
@@ -515,7 +546,7 @@ require('lazy').setup({
       -- Allows extra capabilities provided by blink.cmp
       'saghen/blink.cmp',
     },
-    config = function()
+    config = function(_, opts)
       -- Brief aside: **What is LSP?**
       --
       -- LSP is an initialism you've probably heard, but might not understand what it is.
@@ -614,6 +645,12 @@ require('lazy').setup({
           --
           -- When you move your cursor, the highlights will be cleared (the second autocommand).
           local client = vim.lsp.get_client_by_id(event.data.client_id)
+
+          -- Disable Ruff's hover so Pyright's richer docs take precedence
+          if client and client.name == 'ruff' then
+            client.server_capabilities.hoverProvider = false
+          end
+
           if client and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_documentHighlight, event.buf) then
             local highlight_augroup = vim.api.nvim_create_augroup('kickstart-lsp-highlight', { clear = false })
             vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
@@ -723,6 +760,11 @@ require('lazy').setup({
         },
       }
 
+      -- Merge servers contributed by custom plugin files (e.g., python.lua)
+      if opts.servers then
+        servers = vim.tbl_deep_extend('force', servers, opts.servers)
+      end
+
       -- Ensure the servers and tools above are installed
       --
       -- To check the current status of installed tools and/or manually install
@@ -740,6 +782,12 @@ require('lazy').setup({
       vim.list_extend(ensure_installed, {
         'stylua', -- Used to format Lua code
       })
+
+      -- Merge extra tools contributed by custom plugin files
+      if opts.tools then
+        vim.list_extend(ensure_installed, opts.tools)
+      end
+
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
       require('mason-lspconfig').setup {
@@ -898,18 +946,30 @@ require('lazy').setup({
       signature = { enabled = true },
     },
   },
+  -- {
+  --   -- Edge colorscheme
+  --   'sainnhe/edge',
+  --   priority = 1000, -- Make sure to load this before all the other start plugins.
+  --   config = function()
+  --     -- Edge configuration options (set before loading the colorscheme)
+  --     vim.g.edge_style = 'neon' -- Options: 'default', 'aura', 'neon'
+  --     vim.g.edge_better_performance = 1
+  --     vim.g.edge_disable_italic_comment = 1 -- Disable italics in comments (like your tokyonight config)
+  --
+  --     -- Load the colorscheme
+  --     vim.cmd.colorscheme 'edge'
+  --   end,
+  -- },
   {
-    -- Edge colorscheme
-    'sainnhe/edge',
-    priority = 1000, -- Make sure to load this before all the other start plugins.
+    'Mofiqul/vscode.nvim',
+    priority = 1000,
     config = function()
-      -- Edge configuration options (set before loading the colorscheme)
-      vim.g.edge_style = 'neon' -- Options: 'default', 'aura', 'neon'
-      vim.g.edge_better_performance = 1
-      vim.g.edge_disable_italic_comment = 1 -- Disable italics in comments (like your tokyonight config)
-
-      -- Load the colorscheme
-      vim.cmd.colorscheme 'edge'
+      vim.o.background = 'dark' -- 'dark' or 'light'
+      require('vscode').setup({
+        transparent = false,
+        italic_comments = false,
+      })
+      vim.cmd.colorscheme 'vscode'
     end,
   },
 
@@ -919,7 +979,7 @@ require('lazy').setup({
     config = function()
       require('lualine').setup {
         options = {
-          theme = 'horizon', -- or 'auto' to match your colorscheme
+          theme = 'auto', -- automatically matches the active colorscheme
           globalstatus = true, -- single statusline for all windows
           icons_enabled = false, -- set to true if you have a Nerd Font
           component_separators = { left = '|', right = '|' },

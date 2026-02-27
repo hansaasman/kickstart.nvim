@@ -1,36 +1,32 @@
 -- Python LSP and tools setup
 return {
-  -- Mason for managing LSP servers, linters, formatters
-  {
-    'williamboman/mason.nvim',
-    dependencies = {
-      'WhoIsSethDaniel/mason-tool-installer.nvim',
-    },
-    config = function()
-      require('mason').setup()
-      
-      -- Auto-install tools
-      require('mason-tool-installer').setup {
-        ensure_installed = {
-          'pyright', -- Python LSP
-          'ruff-lsp', -- Fast Python linter  
-          'black', -- Python formatter
-          'isort', -- Import sorter
-          'debugpy', -- Python debugger
-        },
-        auto_update = false,
-        run_on_start = true,
-      }
-    end,
-  },
-
-  -- LSP configuration
+  -- LSP configuration — opts are merged into init.lua's lspconfig config
   {
     'neovim/nvim-lspconfig',
     opts = {
       servers = {
         pyright = {
+          on_init = function(client)
+            -- Search for .venv in project tree (handles nested Poetry projects)
+            local root = client.config.root_dir or vim.fn.getcwd()
+            local venvs = vim.fs.find('.venv', {
+              path = root,
+              upward = false,
+              type = 'directory',
+              limit = 1,
+            })
+            if #venvs > 0 then
+              local python = venvs[1] .. '/bin/python'
+              if vim.fn.executable(python) == 1 then
+                client.config.settings = vim.tbl_deep_extend('force', client.config.settings, {
+                  python = { pythonPath = python },
+                })
+                client.notify('workspace/didChangeConfiguration', { settings = nil })
+              end
+            end
+          end,
           settings = {
+            pyright = { disableOrganizeImports = true }, -- Ruff handles imports
             python = {
               analysis = {
                 typeCheckingMode = 'basic',
@@ -40,14 +36,9 @@ return {
             },
           },
         },
-        ruff_lsp = {
-          init_options = {
-            settings = {
-              args = {},
-            },
-          },
-        },
+        ruff = {}, -- Native Ruff server (replaces deprecated ruff-lsp)
       },
+      tools = { 'debugpy', 'black' },
     },
   },
 
@@ -254,7 +245,7 @@ return {
     'stevearc/conform.nvim',
     opts = {
       formatters_by_ft = {
-        python = { 'isort', 'black' },
+        python = { 'ruff_fix', 'black' },
       },
     },
   },
