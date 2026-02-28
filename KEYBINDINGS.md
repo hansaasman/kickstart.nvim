@@ -369,6 +369,25 @@ Press `r` for the Rebase popup. Choose `i` for interactive rebase. In the rebase
 **10. Resolve conflicts**
 After a merge or rebase conflict, the status buffer shows unmerged files. Open them with `<CR>`, fix the conflicts in the editor, then return to Neogit and stage the resolved files with `s`. Continue the rebase with `r` → continue, or complete the merge with `c` → commit.
 
+### Amend a Commit
+
+1. Stage your changes as usual (`s` on files/hunks)
+2. Press `c` to open the Commit popup
+3. Press `a` to **amend** — this opens the editor with the previous commit message pre-filled
+4. Edit the message (or leave it as-is), then `<C-c><C-c>` to submit
+
+To amend without changing the message: `c` → `e` (extend, amends without opening the editor).
+
+### Push to Gerrit
+
+Neogit's Push popup doesn't support arbitrary refspecs like `HEAD:refs/for/master` directly. Use the command runner instead:
+
+1. From the status buffer, press `Q` to open the command prompt
+2. Type: `push gerrit HEAD:refs/for/master`
+3. Press `<CR>` to execute
+
+This runs `git push gerrit HEAD:refs/for/master` under the hood.
+
 ### Configuration Notes
 
 - **Open style:** `kind = "tab"` (status, log, stash, refs, commit select open in new tab; commit view in vsplit)

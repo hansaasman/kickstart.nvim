@@ -133,6 +133,9 @@ vim.o.signcolumn = 'yes'
 -- Decrease update time
 vim.o.updatetime = 250
 
+-- Auto-reload files changed outside of Neovim (e.g. by CLI tools)
+vim.o.autoread = true
+
 -- Decrease mapped sequence wait time
 vim.o.timeoutlen = 300
 
@@ -164,6 +167,15 @@ vim.o.scrolloff = 10
 -- instead raise a dialog asking if you wish to save the current file(s)
 -- See `:help 'confirm'`
 vim.o.confirm = true
+
+-- Open a terminal automatically on startup
+vim.api.nvim_create_autocmd('VimEnter', {
+  callback = function()
+    if vim.fn.argc() == 0 then
+      vim.cmd.terminal()
+    end
+  end,
+})
 
 -- Custom tabline: show last 3 path components instead of abbreviated paths
 function _G.custom_tabline()
